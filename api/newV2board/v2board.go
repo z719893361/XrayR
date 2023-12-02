@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bitly/go-simplejson"
+	"github.com/go-resty/resty/v2"
 	"log"
 	"os"
 	"regexp"
@@ -13,8 +15,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/bitly/go-simplejson"
-	"github.com/go-resty/resty/v2"
 	"github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/infra/conf"
 
@@ -57,7 +57,7 @@ func New(apiConfig *api.Config) *APIClient {
 
 	var nodeType string
 
-	if apiConfig.NodeType =="V2ray" && apiConfig.EnableVless {
+	if apiConfig.NodeType == "V2ray" && apiConfig.EnableVless {
 		nodeType = "vless"
 	} else {
 		nodeType = "vmess"
@@ -232,9 +232,6 @@ func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	}
 	b, _ := usersResp.Get("users").Encode()
 	json.Unmarshal(b, &users)
-	if len(users) == 0 {
-		return nil, errors.New("users is null")
-	}
 
 	userList := make([]api.UserInfo, len(users))
 	for i := 0; i < len(users); i++ {
@@ -363,12 +360,12 @@ func (c *APIClient) parseSSNodeResponse(s *serverConfig) (*api.NodeInfo, error) 
 // parseV2rayNodeResponse parse the response for the given nodeInfo format
 func (c *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
 	var (
-		host      string
-		header    json.RawMessage
-		enableTLS bool
+		host          string
+		header        json.RawMessage
+		enableTLS     bool
 		enableREALITY bool
-		dest string
-		xVer uint64
+		dest          string
+		xVer          uint64
 	)
 
 	if s.VlessTlsSettings.Dest != "" {
@@ -383,11 +380,11 @@ func (c *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, erro
 	}
 
 	realityConfig := api.REALITYConfig{
-		Dest:        dest + ":" + s.VlessTlsSettings.ServerPort,
+		Dest:             dest + ":" + s.VlessTlsSettings.ServerPort,
 		ProxyProtocolVer: xVer,
-		ServerNames: []string{s.VlessTlsSettings.Sni},
-		PrivateKey:  s.VlessTlsSettings.PrivateKey,
-		ShortIds:    []string{s.VlessTlsSettings.ShortId},
+		ServerNames:      []string{s.VlessTlsSettings.Sni},
+		PrivateKey:       s.VlessTlsSettings.PrivateKey,
+		ShortIds:         []string{s.VlessTlsSettings.ShortId},
 	}
 
 	if c.EnableVless {
