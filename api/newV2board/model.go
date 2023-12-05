@@ -5,19 +5,19 @@ import (
 )
 
 type serverConfig struct {
-	shadowsocks
-	v2ray
-	trojan
+	Shadowsocks
+	V2ray
+	Trojan
 
 	ServerPort int `json:"server_port"`
 	BaseConfig struct {
 		PushInterval int `json:"push_interval"`
 		PullInterval int `json:"pull_interval"`
 	} `json:"base_config"`
-	Routes []route `json:"routes"`
+	Routes []Route `json:"routes"`
 }
 
-type shadowsocks struct {
+type Shadowsocks struct {
 	Cipher       string `json:"cipher"`
 	Obfs         string `json:"obfs"`
 	ObfsSettings struct {
@@ -27,7 +27,7 @@ type shadowsocks struct {
 	ServerKey string `json:"server_key"`
 }
 
-type v2ray struct {
+type V2ray struct {
 	Network         string `json:"network"`
 	NetworkSettings struct {
 		Path        string           `json:"path"`
@@ -41,7 +41,7 @@ type v2ray struct {
 		ServiceName string           `json:"serviceName"`
 		Header      *json.RawMessage `json:"header"`
 	} `json:"network_settings"`
-	VlessFlow   string `json:"flow"`
+	VlessFlow        string `json:"flow"`
 	VlessTlsSettings struct {
 		ServerPort string `json:"server_port"`
 		Dest       string `json:"dest"`
@@ -53,20 +53,21 @@ type v2ray struct {
 	Tls int `json:"tls"`
 }
 
-type trojan struct {
+type Trojan struct {
 	Host       string `json:"host"`
 	ServerName string `json:"server_name"`
 }
 
-type route struct {
+type Route struct {
 	Id          int      `json:"id"`
 	Match       []string `json:"match"`
 	Action      string   `json:"action"`
 	ActionValue string   `json:"action_value"`
 }
 
-type user struct {
-	Id         int    `json:"id"`
-	Uuid       string `json:"uuid"`
-	SpeedLimit int    `json:"speed_limit"`
+type User struct {
+	Id          int    `json:"id"`
+	Uuid        string `json:"uuid"`
+	SpeedLimit  int    `json:"speed_limit"`
+	DeviceLimit int    `json:"capacity_limit"`
 }
