@@ -120,26 +120,26 @@ func readLocalRuleList(path string) (LocalRuleList []api.DetectRule) {
 }
 
 // Describe return a description of the client
-func (c *APIClient) Describe() api.ClientInfo {
-	return api.ClientInfo{APIHost: c.APIHost, NodeID: c.NodeID, Key: c.Key, NodeType: c.NodeType}
+func (apiClient *APIClient) Describe() api.ClientInfo {
+	return api.ClientInfo{APIHost: apiClient.APIHost, NodeID: apiClient.NodeID, Key: apiClient.Key, NodeType: apiClient.NodeType}
 }
 
 // Debug set the client debug for client
-func (c *APIClient) Debug() {
-	c.client.SetDebug(true)
+func (apiClient *APIClient) Debug() {
+	apiClient.client.SetDebug(true)
 }
 
-func (c *APIClient) assembleURL(path string) string {
-	return c.APIHost + path
+func (apiClient *APIClient) assembleURL(path string) string {
+	return apiClient.APIHost + path
 }
 
-func (c *APIClient) parseResponse(res *resty.Response, path string, err error) (*simplejson.Json, error) {
+func (apiClient *APIClient) parseResponse(res *resty.Response, path string, err error) (*simplejson.Json, error) {
 	if err != nil {
-		return nil, fmt.Errorf("request %s failed: %v", c.assembleURL(path), err)
+		return nil, fmt.Errorf("request %s failed: %v", apiClient.assembleURL(path), err)
 	}
 
 	if res.StatusCode() > 399 {
-		return nil, fmt.Errorf("request %s failed: %s, %v", c.assembleURL(path), res.String(), err)
+		return nil, fmt.Errorf("request %s failed: %s, %v", apiClient.assembleURL(path), res.String(), err)
 	}
 
 	rtn, err := simplejson.NewJson(res.Body())
@@ -151,12 +151,12 @@ func (c *APIClient) parseResponse(res *resty.Response, path string, err error) (
 }
 
 // GetNodeInfo will pull NodeInfo Config from panel
-func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
+func (apiClient *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 	server := new(serverConfig)
 	path := "/api/v1/server/UniProxy/config"
 
-	res, err := c.client.R().
-		SetHeader("If-None-Match", c.eTags["node"]).
+	res, err := apiClient.client.R().
+		SetHeader("If-None-Match", apiClient.eTags["node"]).
 		ForceContentType("application/json").
 		Get(path)
 
@@ -165,11 +165,11 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 		return nil, errors.New(api.NodeNotModified)
 	}
 	// update etag
-	if res.Header().Get("Etag") != "" && res.Header().Get("Etag") != c.eTags["node"] {
-		c.eTags["node"] = res.Header().Get("Etag")
+	if res.Header().Get("Etag") != "" && res.Header().Get("Etag") != apiClient.eTags["node"] {
+		apiClient.eTags["node"] = res.Header().Get("Etag")
 	}
 
-	nodeInfoResp, err := c.parseResponse(res, path, err)
+	nodeInfoResp, err := apiClient.parseResponse(res, path, err)
 	if err != nil {
 		return nil, err
 	}
@@ -180,17 +180,17 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 		return nil, errors.New("server port must > 0")
 	}
 
-	c.resp.Store(server)
+	apiClient.resp.Store(server)
 
-	switch c.NodeType {
+	switch apiClient.NodeType {
 	case "V2ray":
-		nodeInfo, err = c.parseV2rayNodeResponse(server)
+		nodeInfo, err = apiClient.parseV2rayNodeResponse(server)
 	case "Trojan":
-		nodeInfo, err = c.parseTrojanNodeResponse(server)
+		nodeInfo, err = apiClient.parseTrojanNodeResponse(server)
 	case "Shadowsocks":
-		nodeInfo, err = c.parseSSNodeResponse(server)
+		nodeInfo, err = apiClient.parseSSNodeResponse(server)
 	default:
-		return nil, fmt.Errorf("unsupported node type: %s", c.NodeType)
+		return nil, fmt.Errorf("unsupported node type: %s", apiClient.NodeType)
 	}
 
 	if err != nil {
@@ -201,65 +201,60 @@ func (c *APIClient) GetNodeInfo() (nodeInfo *api.NodeInfo, err error) {
 }
 
 // GetUserList will pull user form panel
-func (c *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
-	var users []*user
+func (apiClient *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) {
 	path := "/api/v1/server/UniProxy/user"
-
-	switch c.NodeType {
+	switch apiClient.NodeType {
 	case "V2ray", "Trojan", "Shadowsocks":
 		break
 	default:
-		return nil, fmt.Errorf("unsupported node type: %s", c.NodeType)
+		return nil, fmt.Errorf("unsupported node type: %s", apiClient.NodeType)
 	}
-
-	res, err := c.client.R().
-		SetHeader("If-None-Match", c.eTags["users"]).
+	res, err := apiClient.client.R().
+		SetHeader("If-None-Match", apiClient.eTags["users"]).
 		ForceContentType("application/json").
 		Get(path)
-
 	// Etag identifier for a specific version of a resource. StatusCode = 304 means no changed
 	if res.StatusCode() == 304 {
 		return nil, errors.New(api.UserNotModified)
 	}
 	// update etag
-	if res.Header().Get("Etag") != "" && res.Header().Get("Etag") != c.eTags["users"] {
-		c.eTags["users"] = res.Header().Get("Etag")
+	if res.Header().Get("Etag") != "" && res.Header().Get("Etag") != apiClient.eTags["users"] {
+		apiClient.eTags["users"] = res.Header().Get("Etag")
 	}
 
-	usersResp, err := c.parseResponse(res, path, err)
+	usersResp, err := apiClient.parseResponse(res, path, err)
 	if err != nil {
 		return nil, err
 	}
 	b, _ := usersResp.Get("users").Encode()
-	json.Unmarshal(b, &users)
-
-	userList := make([]api.UserInfo, len(users))
+	var users []*User
+	err = json.Unmarshal(b, &users)
+	if err != nil {
+		return nil, err
+	}
+	userNodes := make([]api.UserInfo, len(users))
 	for i := 0; i < len(users); i++ {
-		u := api.UserInfo{
+		user := api.UserInfo{
 			UID:  users[i].Id,
 			UUID: users[i].Uuid,
 		}
-
-		// Support 1.7.1 speed limit
-		if c.SpeedLimit > 0 {
-			u.SpeedLimit = uint64(c.SpeedLimit * 1000000 / 8)
+		if apiClient.SpeedLimit > 0 {
+			user.SpeedLimit = uint64(apiClient.SpeedLimit * 1000000 / 8)
 		} else {
-			u.SpeedLimit = uint64(users[i].SpeedLimit * 1000000 / 8)
+			user.SpeedLimit = uint64(users[i].SpeedLimit * 1000000 / 8)
 		}
-
-		u.DeviceLimit = c.DeviceLimit // todo waiting v2board send configuration
-		u.Email = u.UUID + "@v2board.user"
-		if c.NodeType == "Shadowsocks" {
-			u.Passwd = u.UUID
+		if apiClient.DeviceLimit > 0 {
+			user.DeviceLimit = apiClient.DeviceLimit
+		} else {
+			user.DeviceLimit = users[i].DeviceLimit
 		}
-		userList[i] = u
+		userNodes[i] = user
 	}
-
-	return &userList, nil
+	return &userNodes, nil
 }
 
 // ReportUserTraffic reports the user traffic
-func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
+func (apiClient *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 	path := "/api/v1/server/UniProxy/push"
 
 	// json structure: {uid1: [u, d], uid2: [u, d], uid1: [u, d], uid3: [u, d]}
@@ -268,8 +263,8 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 		data[traffic.UID] = []int64{traffic.Upload, traffic.Download}
 	}
 
-	res, err := c.client.R().SetBody(data).ForceContentType("application/json").Post(path)
-	_, err = c.parseResponse(res, path, err)
+	res, err := apiClient.client.R().SetBody(data).ForceContentType("application/json").Post(path)
+	_, err = apiClient.parseResponse(res, path, err)
 	if err != nil {
 		return err
 	}
@@ -278,10 +273,10 @@ func (c *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) error {
 }
 
 // GetNodeRule implements the API interface
-func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
-	routes := c.resp.Load().(*serverConfig).Routes
+func (apiClient *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
+	routes := apiClient.resp.Load().(*serverConfig).Routes
 
-	ruleList := c.LocalRuleList
+	ruleList := apiClient.LocalRuleList
 
 	for i := range routes {
 		if routes[i].Action == "block" {
@@ -296,26 +291,26 @@ func (c *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 }
 
 // ReportNodeStatus implements the API interface
-func (c *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err error) {
+func (apiClient *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err error) {
 	return nil
 }
 
 // ReportNodeOnlineUsers implements the API interface
-func (c *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) error {
+func (apiClient *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) error {
 	return nil
 }
 
 // ReportIllegal implements the API interface
-func (c *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
+func (apiClient *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
 	return nil
 }
 
 // parseTrojanNodeResponse parse the response for the given nodeInfo format
-func (c *APIClient) parseTrojanNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
+func (apiClient *APIClient) parseTrojanNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
 	// Create GeneralNodeInfo
 	nodeInfo := &api.NodeInfo{
-		NodeType:          c.NodeType,
-		NodeID:            c.NodeID,
+		NodeType:          apiClient.NodeType,
+		NodeID:            apiClient.NodeID,
 		Port:              uint32(s.ServerPort),
 		TransportProtocol: "tcp",
 		EnableTLS:         true,
@@ -327,7 +322,7 @@ func (c *APIClient) parseTrojanNodeResponse(s *serverConfig) (*api.NodeInfo, err
 }
 
 // parseSSNodeResponse parse the response for the given nodeInfo format
-func (c *APIClient) parseSSNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
+func (apiClient *APIClient) parseSSNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
 	var header json.RawMessage
 
 	if s.Obfs == "http" {
@@ -346,8 +341,8 @@ func (c *APIClient) parseSSNodeResponse(s *serverConfig) (*api.NodeInfo, error) 
 	}
 	// Create GeneralNodeInfo
 	return &api.NodeInfo{
-		NodeType:          c.NodeType,
-		NodeID:            c.NodeID,
+		NodeType:          apiClient.NodeType,
+		NodeID:            apiClient.NodeID,
 		Port:              uint32(s.ServerPort),
 		TransportProtocol: "tcp",
 		CypherMethod:      s.Cipher,
@@ -358,7 +353,7 @@ func (c *APIClient) parseSSNodeResponse(s *serverConfig) (*api.NodeInfo, error) 
 }
 
 // parseV2rayNodeResponse parse the response for the given nodeInfo format
-func (c *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
+func (apiClient *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, error) {
 	var (
 		host          string
 		header        json.RawMessage
@@ -387,7 +382,7 @@ func (c *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, erro
 		ShortIds:         []string{s.VlessTlsSettings.ShortId},
 	}
 
-	if c.EnableVless {
+	if apiClient.EnableVless {
 		s.NetworkSettings = s.VlessNetworkSettings
 	}
 
@@ -425,15 +420,15 @@ func (c *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeInfo, erro
 
 	// Create GeneralNodeInfo
 	return &api.NodeInfo{
-		NodeType:          c.NodeType,
-		NodeID:            c.NodeID,
+		NodeType:          apiClient.NodeType,
+		NodeID:            apiClient.NodeID,
 		Port:              uint32(s.ServerPort),
 		AlterID:           0,
 		TransportProtocol: s.Network,
 		EnableTLS:         enableTLS,
 		Path:              s.NetworkSettings.Path,
 		Host:              host,
-		EnableVless:       c.EnableVless,
+		EnableVless:       apiClient.EnableVless,
 		VlessFlow:         s.VlessFlow,
 		ServiceName:       s.NetworkSettings.ServiceName,
 		Header:            header,
