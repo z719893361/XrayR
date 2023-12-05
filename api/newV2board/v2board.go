@@ -235,8 +235,9 @@ func (apiClient *APIClient) GetUserList() (UserList *[]api.UserInfo, err error) 
 	userNodes := make([]api.UserInfo, len(users))
 	for i := 0; i < len(users); i++ {
 		user := api.UserInfo{
-			UID:  users[i].Id,
-			UUID: users[i].Uuid,
+			UID:   users[i].Id,
+			UUID:  users[i].Uuid,
+			Email: users[i].Email,
 		}
 		if apiClient.SpeedLimit > 0 {
 			user.SpeedLimit = uint64(apiClient.SpeedLimit * 1000000 / 8)
