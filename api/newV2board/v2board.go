@@ -362,6 +362,7 @@ func (apiClient *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeIn
 		enableREALITY bool
 		dest          string
 		xVer          uint64
+		CertDomain    string
 	)
 
 	if s.VlessTlsSettings.Dest != "" {
@@ -418,7 +419,9 @@ func (apiClient *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeIn
 		enableTLS = true
 		enableREALITY = true
 	}
-
+	if enableTLS {
+		CertDomain = s.TlsSettings.ServerName
+	}
 	// Create GeneralNodeInfo
 	return &api.NodeInfo{
 		NodeType:          apiClient.NodeType,
@@ -436,6 +439,7 @@ func (apiClient *APIClient) parseV2rayNodeResponse(s *serverConfig) (*api.NodeIn
 		EnableREALITY:     enableREALITY,
 		REALITYConfig:     &realityConfig,
 		NameServerConfig:  s.parseDNSConfig(),
+		CertDomain:        CertDomain,
 	}, nil
 }
 
