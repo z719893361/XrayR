@@ -223,6 +223,9 @@ func InboundBuilder(config *Config, nodeInfo *api.NodeInfo, tag string) (*core.I
 
 	if !isREALITY && nodeInfo.EnableTLS && config.CertConfig.CertMode != "none" {
 		streamSetting.Security = "tls"
+		if nodeInfo.CertDomain != "" {
+			config.CertConfig.CertDomain = nodeInfo.CertDomain
+		}
 		certFile, keyFile, err := getCertFile(config.CertConfig)
 		if err != nil {
 			return nil, err
