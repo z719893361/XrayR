@@ -35,6 +35,9 @@ type V2ray struct {
 		ServiceName string           `json:"serviceName"`
 		Header      *json.RawMessage `json:"header"`
 	} `json:"networkSettings"`
+	TlsSettings struct {
+		ServerName string `json:"serverName"`
+	} `json:"tlsSettings"`
 	VlessNetworkSettings struct {
 		Path        string           `json:"path"`
 		Headers     *json.RawMessage `json:"headers"`
