@@ -52,6 +52,7 @@ type NodeInfo struct {
 	CypherMethod      string
 	ServerKey         string
 	ServiceName       string
+	CertDomain        string // 设置
 	Header            json.RawMessage
 	NameServerConfig  []*conf.NameServerConfig
 	EnableREALITY     bool
