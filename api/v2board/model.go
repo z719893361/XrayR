@@ -1,4 +1,4 @@
-package newV2board
+package v2board
 
 import (
 	"encoding/json"
@@ -73,5 +73,5 @@ type User struct {
 	Email       string `json:"email"`
 	Uuid        string `json:"uuid"`
 	SpeedLimit  int    `json:"speed_limit"`
-	DeviceLimit int    `json:"capacity_limit"`
+	DeviceLimit int    `json:"device_limit"`
 }
