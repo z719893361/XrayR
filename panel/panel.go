@@ -8,7 +8,7 @@ import (
 
 	"github.com/XrayR-project/XrayR/api/bunpanel"
 	"github.com/XrayR-project/XrayR/api/gov2panel"
-	"github.com/XrayR-project/XrayR/api/newV2board"
+	"github.com/XrayR-project/XrayR/api/v2board"
 	"github.com/XrayR-project/XrayR/app/mydispatcher"
 
 	"dario.cat/mergo"
@@ -179,7 +179,7 @@ func (p *Panel) Start() {
 		case "SSpanel":
 			apiClient = sspanel.New(nodeConfig.ApiConfig)
 		case "NewV2board", "V2board":
-			apiClient = newV2board.New(nodeConfig.ApiConfig)
+			apiClient = v2board.New(nodeConfig.ApiConfig)
 		case "PMpanel":
 			apiClient = pmpanel.New(nodeConfig.ApiConfig)
 		case "Proxypanel":
