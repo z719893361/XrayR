@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 )
 
-type serverConfig struct {
+type ServerConfig struct {
 	Shadowsocks
 	V2ray
 	Trojan
@@ -38,21 +38,6 @@ type V2ray struct {
 	TlsSettings struct {
 		ServerName string `json:"serverName"`
 	} `json:"tlsSettings"`
-	VlessNetworkSettings struct {
-		Path        string           `json:"path"`
-		Headers     *json.RawMessage `json:"headers"`
-		ServiceName string           `json:"serviceName"`
-		Header      *json.RawMessage `json:"header"`
-	} `json:"network_settings"`
-	VlessFlow        string `json:"flow"`
-	VlessTlsSettings struct {
-		ServerPort string `json:"server_port"`
-		Dest       string `json:"dest"`
-		xVer       uint64 `json:"xver"`
-		Sni        string `json:"server_name"`
-		PrivateKey string `json:"private_key"`
-		ShortId    string `json:"short_id"`
-	} `json:"tls_settings"`
 	Tls int `json:"tls"`
 }
 
