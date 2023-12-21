@@ -262,7 +262,6 @@ func (apiClient *APIClient) ReportUserTraffic(userTraffic *[]api.UserTraffic) er
 	for _, traffic := range *userTraffic {
 		data[traffic.UID] = []int64{traffic.Upload, traffic.Download}
 	}
-
 	res, err := apiClient.client.R().SetBody(data).ForceContentType("application/json").Post(path)
 	_, err = apiClient.parseResponse(res, path, err)
 	if err != nil {
@@ -283,7 +282,6 @@ func (apiClient *APIClient) GetNodeRule() (*[]api.DetectRule, error) {
 			})
 		}
 	}
-
 	return &ruleList, nil
 }
 
@@ -292,7 +290,17 @@ func (apiClient *APIClient) ReportNodeStatus(nodeStatus *api.NodeStatus) (err er
 }
 
 func (apiClient *APIClient) ReportNodeOnlineUsers(onlineUserList *[]api.OnlineUser) error {
-	return nil
+	path := "/api/v1/server/UniProxy/online"
+	reportOnline := make(map[int]int)
+	for _, user := range *onlineUserList {
+		if _, ok := reportOnline[user.UID]; ok {
+			reportOnline[user.UID]++
+		} else {
+			reportOnline[user.UID] = 1
+		}
+	}
+	_, err := apiClient.client.R().SetBody(reportOnline).ForceContentType("application/json").Post(path)
+	return err
 }
 
 func (apiClient *APIClient) ReportIllegal(detectResultList *[]api.DetectResult) error {
